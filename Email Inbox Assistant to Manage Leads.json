@@ -1,0 +1,628 @@
+{
+  "name": "Email Inbox Assistant to Manage Leads",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "readStatus": "unread"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -288,
+        0
+      ],
+      "id": "db2fdf5e-c74c-46e0-8030-a3b12b7c9224",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lskZRHS0RXxPUWzk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.from.value[0].name }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "SenderName",
+              "description": "Extract the sender's name from the email . If the name is not available, return an empty string",
+              "required": true
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You are an extraction expert. Identify and extract only the key information from the text . If a required attribute is not present , return an empty string as its value "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        -80,
+        16
+      ],
+      "id": "b6c4043c-e1e9-464c-b8ca-ea850ee19b20",
+      "name": "Information Extractor"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "36c3143b-1b5b-4e42-9aab-c74085a3508a",
+              "leftValue": "={{ $json.output.SenderName }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        -16
+      ],
+      "id": "29284834-4306-4b26-8b1a-df8c6f702b32",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "model": "gpt-oss:20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        208
+      ],
+      "id": "b85db1af-414f-4fd1-8592-128cf5556f35",
+      "name": "Ollama Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "OLgv30ePHdrJgKTg",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "24dee38f-d658-4f11-86bd-ca02689cfe29",
+              "name": "introduction",
+              "value": "Hey ",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        432,
+        80
+      ],
+      "id": "a1bbd1aa-1310-4ff4-b743-fa9ed5abd38e",
+      "name": "No Name"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ed70a242-d4c5-457a-855d-00bb48a4c73b",
+              "name": "introduction",
+              "value": "=Dear {{ $json.output.SenderName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        432,
+        -144
+      ],
+      "id": "66a6886c-eb95-450b-97c5-d7798cac88a7",
+      "name": "Nmae Found"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "introduction",
+        "joinMode": "keepNonMatches",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        640,
+        -16
+      ],
+      "id": "9d8e2837-662e-47f8-8468-6346628a5b14",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2264cb80-c2dc-41d0-a7e1-b2aac5c71e6e",
+              "name": "introduction",
+              "value": "={{ $('Nmae Found').item.json.introduction }}",
+              "type": "string"
+            },
+            {
+              "id": "94631670-cd19-4984-a190-32eb469e1bd5",
+              "name": "EmailBody",
+              "value": "={{ $('Gmail Trigger').item.json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "bee868bf-8808-41c3-9845-f836b01d8f95",
+              "name": "messageid",
+              "value": "={{ $('Gmail Trigger').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "b82d16c4-f3d0-4ff1-8e8f-ef80bf62876d",
+              "name": "threadid",
+              "value": "={{ $('Gmail Trigger').item.json.threadId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        848,
+        -16
+      ],
+      "id": "c9eff02b-29ef-4cc7-9447-694a0164b0a0",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.EmailBody }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Cousre Request ",
+              "description": "This includes inquiries  about course service , pricing, availability , or related detailes"
+            },
+            {
+              "category": "consultation Requests",
+              "description": "This Includes Scheduling initial consultations or follow-up appointments "
+            },
+            {
+              "category": "Payments ",
+              "description": "inquiries about paid collab payments, or refund request."
+            },
+            {
+              "category": "Miscellaneous",
+              "description": "Emails that don't fall into any od the predefinied categories."
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "please share with me the specific {categories} that you would like to use so i can perform thr analysis correctly.Once you have provided the categories, I will deliver the answer in JSON format, without explanations."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        1056,
+        -16
+      ],
+      "id": "d4178916-a1f6-4712-8fbd-b28f901df3dc",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {
+        "model": "gpt-oss:20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        992,
+        224
+      ],
+      "id": "e9f939de-b3a7-42b8-921e-2ed892130962",
+      "name": "Ollama Model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "OLgv30ePHdrJgKTg",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.messageid }}",
+        "labelIds": [
+          "Label_2319599419127469678"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1456,
+        -304
+      ],
+      "id": "ee0fe22f-d933-42e5-bfd5-d5098f253db9",
+      "name": "Course Request",
+      "webhookId": "06c97840-99f4-4002-ae49-cd34bd3d8f1b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lskZRHS0RXxPUWzk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.messageid }}",
+        "labelIds": [
+          "Label_7713013239950878967"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        -96
+      ],
+      "id": "fe06b8ec-d433-4b69-9551-0565b64b8cc1",
+      "name": "Interested Inbound Leads",
+      "webhookId": "06c97840-99f4-4002-ae49-cd34bd3d8f1b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lskZRHS0RXxPUWzk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.messageid }}",
+        "labelIds": [
+          "CATEGORY_PROMOTIONS"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        224
+      ],
+      "id": "80605078-757b-426e-b5a3-94c0486b13ea",
+      "name": "Sponsered",
+      "webhookId": "06c97840-99f4-4002-ae49-cd34bd3d8f1b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lskZRHS0RXxPUWzk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.messageid }}",
+        "labelIds": [
+          "Label_5242964980283071924"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        64
+      ],
+      "id": "e016ce50-91a2-44d6-a6cd-a95a0e668777",
+      "name": "Paid Collab",
+      "webhookId": "06c97840-99f4-4002-ae49-cd34bd3d8f1b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lskZRHS0RXxPUWzk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Text Classifier').item.json.messageid }}",
+        "emailType": "text",
+        "message": "={{ $('Text Classifier').item.json.introduction }}\n\nThank you for enrolling in our Meta Ads Course. \n\nWe have successfully received your enrollment request. \nOur team will contact you within the next 24 hours with the complete course details and next steps. \nIf you have any immediate questions, feel free to reply to this email.\nWe look forward to helping you grow your digital marketing skills.  \n\nBest regards, \nMohammed Afridi A \nGrowup academy  \n+91 6374674875",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1664,
+        -304
+      ],
+      "id": "b2405810-1264-49ee-b557-054ee9d4032a",
+      "name": "Reply to a message",
+      "webhookId": "7a24a0f1-0ecd-4a79-bad0-d78658dc0abf",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lskZRHS0RXxPUWzk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Text Classifier').item.json.messageid }}",
+        "emailType": "text",
+        "message": "={{ $('Text Classifier').item.json.introduction }}\n\nThank you for reaching out to us.\n\nWe appreciate your interest in our services. Our team has received your enquiry and will get in touch with you within the next 24 hours to understand your requirements and provide the best possible solution.\n\nIf you have any additional details to share, feel free to reply to this email.\n\nLooking forward to connecting with you.\n\nBest regards,\nMohammed Afridi A\nGrowup Digital Marketing Agency\n+91 6374674875",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        -112
+      ],
+      "id": "ce78938e-1f09-448f-bf74-dca0356b159d",
+      "name": "Reply to a message1",
+      "webhookId": "7a24a0f1-0ecd-4a79-bad0-d78658dc0abf",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lskZRHS0RXxPUWzk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Text Classifier').item.json.messageid }}",
+        "emailType": "text",
+        "message": "={{ $('Text Classifier').item.json.introduction }}\n\nThank you for contacting us regarding Paid collab / Billing enquiry.\n\nA member of our team will reach out to you within 2 business days to provide the necessary information and assistance.\n\nIf this is an urgent matter, please feel free to call us directly at +91 6374674875.\n\nThank you for your patience and for choosing Growup Digital Marketing Agency.\n\nBest regards,\nMohammed Afridi A\nFounder & CEO\nGrowup Digital Marketing Agency",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        64
+      ],
+      "id": "5f461658-72a3-463e-ad07-9f9e354234e6",
+      "name": "Reply to a message2",
+      "webhookId": "7a24a0f1-0ecd-4a79-bad0-d78658dc0abf",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lskZRHS0RXxPUWzk",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Nmae Found",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nmae Found": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Name": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Course Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Interested Inbound Leads",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Paid Collab",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sponsered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Course Request": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interested Inbound Leads": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Paid Collab": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "5edcf8ab-8997-426d-a2cd-c5b33ed28967",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "53cf75037090c6b5b1d86aa37b9469936502edb279f1ae633294308f7eb40135"
+  },
+  "id": "QgXgVSLtOePJ0avO",
+  "tags": []
+}
